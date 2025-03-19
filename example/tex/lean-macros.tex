@@ -1,0 +1,11 @@
+% Required packages:
+% \usepackage{graphicx}
+% \usepackage{hyperref}
+
+\newcommand{\citeLeanRoot}{https://expectedtotalcostofmdps.github.io}
+
+\newcommand{\citeLeanLink}[1]{\href{\citeLeanRoot/#1}{\includegraphics[scale=0.1]{lean-logo.pdf}}}
+\newcommand{\citeLeanDocsLink}[2]{\href{\citeLeanRoot/#1}{#2}}
+
+\newcommand{\citeLean}[1]{\vspace{10pt}\llap{\vspace{26pt}\citeLeanLink{#1} \quad\vspace{-55pt}}}
+\newcommand{\citeLeanMissing}{\vspace{10pt}\llap{\vspace{26pt} \fcolorbox{red}{yellow}{\includegraphics[scale=0.1]{lean_logo.pdf}} \quad\vspace{-55pt}}}
