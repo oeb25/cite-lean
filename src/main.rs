@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Write as _};
+use std::{collections::HashMap, io::Write as _, mem::replace, path::PathBuf};
 
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::Parser as _;
@@ -33,7 +33,10 @@ enum Command {
 
 #[derive(Debug, clap::Subcommand)]
 enum Asset {
-    GithubDocGen4Ci { lean_lib: String },
+    GithubDocGen4Ci {
+        working_dir: Utf8PathBuf,
+        lean_lib: String,
+    },
     LeanPDF,
     TexMacros,
 }
@@ -200,9 +203,22 @@ fn main() -> Result<()> {
             }
         }
         Command::Asset { asset } => match asset {
-            Asset::GithubDocGen4Ci { lean_lib } => {
+            Asset::GithubDocGen4Ci {
+                working_dir,
+                lean_lib,
+            } => {
+                let wd = working_dir.as_str();
+
+                let wd = if wd.ends_with("/") {
+                    wd.to_string()
+                } else {
+                    wd.to_string() + "/"
+                };
+
                 let src = include_str!("../.github/workflows/docs.yml")
-                    .replace("Theory:docs", &format!("{lean_lib}:docs"));
+                    .replace("Theory:docs", &format!("{lean_lib}:docs"))
+                    .replace("example/lean/", &wd);
+
                 println!("{}", src);
             }
             Asset::LeanPDF => {
