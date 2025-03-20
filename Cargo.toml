@@ -2,6 +2,7 @@
 name = "cite-lean"
 version = "0.1.0"
 edition = "2024"
+repository = "https://github.com/oeb25/cite-lean"
 
 [dependencies]
 bincode = { version = "2.0.0-rc.3", features = ["serde"] }
@@ -17,3 +18,13 @@ tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 urlencoding = "2.1.3"
 walkdir = "2.5.0"
+
+[workspace.metadata.release]
+publish = false
+tag-name = "v{{version}}"
+shared-version = true
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
