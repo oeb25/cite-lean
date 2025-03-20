@@ -1,2 +1,12 @@
-compile:
+compile: data cite pdf
+
+pdf:
     cd tex && pdflatex -interaction=nonstopmode main.tex
+
+URL := "https://oeb25.github.io/cite-lean/"
+
+data:
+    cargo run --release -- download --doc-url {{URL}}
+
+cite:
+    cargo run --release -- cite tex --write

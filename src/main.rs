@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Write as _};
 
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::Parser as _;
@@ -16,15 +16,26 @@ struct Cli {
 
 #[derive(Debug, clap::Subcommand)]
 enum Command {
-    DownloadData {
+    Download {
         #[clap(long, short)]
         doc_url: String,
     },
-    CiteLean {
+    Cite {
         #[clap(long, default_value_t = false)]
         write: bool,
         root: Utf8PathBuf,
     },
+    Asset {
+        #[clap(subcommand)]
+        asset: Asset,
+    },
+}
+
+#[derive(Debug, clap::Subcommand)]
+enum Asset {
+    GithubDocGen4Ci { lean_lib: String },
+    LeanPDF,
+    TexMacros,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -37,6 +48,7 @@ struct Data {
 
 #[derive(Debug, bincode::Decode, bincode::Encode)]
 struct FastData {
+    doc_url: String,
     declarations: HashMap<String, String>,
 }
 
@@ -72,7 +84,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.cmd {
-        Command::DownloadData { doc_url } => {
+        Command::Download { doc_url } => {
             let data = reqwest::blocking::get(format!(
                 "{}/declarations/declaration-data.bmp",
                 doc_url.trim_end_matches('/')
@@ -80,6 +92,7 @@ fn main() -> Result<()> {
             .bytes()?;
             let data: Data = serde_json::from_slice(&data)?;
             let fast_data = FastData {
+                doc_url: doc_url.clone(),
                 declarations: data
                     .declarations
                     .into_iter()
@@ -92,7 +105,7 @@ fn main() -> Result<()> {
                 bincode::config::standard(),
             )?;
         }
-        Command::CiteLean { write, root } => {
+        Command::Cite { write, root } => {
             let data: FastData = bincode::decode_from_std_read(
                 &mut std::fs::File::open(".cite-lean.bin")?,
                 bincode::config::standard(),
@@ -115,19 +128,24 @@ fn main() -> Result<()> {
                 let mut output = String::new();
 
                 for (line_idx, line) in src.lines().enumerate() {
-                    let needle = "cite-lean(";
-                    if let Some(start) = line.find(needle) {
-                        let end = line[start + needle.len()..]
+                    let needle_cite_lean = "cite-lean(";
+                    let needle_cite_lean_root = "cite-lean-root(";
+                    if let Some(start) = line.find(needle_cite_lean) {
+                        let end = line[start + needle_cite_lean.len()..]
                             .find(')')
                             .ok_or_else(|| eyre!("expected closing parenthesis"))?;
-                        let key = &line[start + needle.len()..start + needle.len() + end];
+                        let key = &line
+                            [start + needle_cite_lean.len()..start + needle_cite_lean.len() + end];
                         let Some(doc_link) = data.declarations.get(key) else {
-                            let link =
-                                format!("{file}:{}:{}", line_idx + 1, start + needle.len() + 1);
+                            let link = format!(
+                                "{file}:{}:{}",
+                                line_idx + 1,
+                                start + needle_cite_lean.len() + 1
+                            );
                             error!(%key, "missing declaration {}", link);
                             let pre = line[0..start].find(|c: char| !c.is_whitespace());
                             output.push_str(&line[0..pre.unwrap_or(0)]);
-                            output.push_str("\\leanMissing");
+                            output.push_str("\\citeLeanMissing");
                             output.push_str(" % ");
                             output.push_str(&line[start..]);
                             output.push('\n');
@@ -144,7 +162,22 @@ fn main() -> Result<()> {
                         );
                         let pre = line[0..start].find(|c: char| !c.is_whitespace());
                         output.push_str(&line[0..pre.unwrap_or(0)]);
-                        output.push_str(&format!("\\lean{{{url}}}"));
+                        output.push_str(&format!("\\citeLean{{{url}}}"));
+                        output.push_str(" % ");
+                        output.push_str(&line[start..]);
+                        output.push('\n');
+                    } else if let Some(start) = line.find(needle_cite_lean_root) {
+                        let end = line[start + needle_cite_lean_root.len()..]
+                            .find(')')
+                            .ok_or_else(|| eyre!("expected closing parenthesis"))?;
+                        let _key = &line[start + needle_cite_lean_root.len()
+                            ..start + needle_cite_lean_root.len() + end];
+                        let pre = line[0..start].find(|c: char| !c.is_whitespace());
+                        output.push_str(&line[0..pre.unwrap_or(0)]);
+                        output.push_str(&format!(
+                            "\\newcommand{{\\citeLeanRoot}}{{{}}}",
+                            data.doc_url
+                        ));
                         output.push_str(" % ");
                         output.push_str(&line[start..]);
                         output.push('\n');
@@ -166,6 +199,19 @@ fn main() -> Result<()> {
                 }
             }
         }
+        Command::Asset { asset } => match asset {
+            Asset::GithubDocGen4Ci { lean_lib } => {
+                let src = include_str!("../.github/workflows/docs.yml")
+                    .replace("Theory:docs", &format!("{lean_lib}:docs"));
+                println!("{}", src);
+            }
+            Asset::LeanPDF => {
+                std::io::stdout().write_all(include_bytes!("../example/tex/lean-logo.pdf"))?
+            }
+            Asset::TexMacros => {
+                std::io::stdout().write_all(include_bytes!("../example/tex/lean-macros.tex"))?
+            }
+        },
     }
 
     Ok(())

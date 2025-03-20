@@ -1,12 +1,14 @@
 \documentclass{article}
 
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{amsthm}
 
 \input{lean-macros}
 
-\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
 
 \title{Using \texttt{cite-lean} in \LaTeX}
 
@@ -16,11 +18,9 @@
 
 \maketitle
 
-Hello world
-
-\lean{wow}
-\begin{definition}
-    This is very cool!
-\end{definition}
+\citeLean{Theory/Basic.html\#Theory.\%F0\%9D\%93\%82\%F0\%9D\%93\%8E_\%F0\%9D\%93\%89\%F0\%9D\%92\%BD\%E2\%84\%AF\%E2\%84\%B4\%F0\%9D\%93\%87\%F0\%9D\%93\%8E} % cite-lean(Theory.𝓂𝓎_𝓉𝒽ℯℴ𝓇𝓎)
+\begin{theorem}
+    $1 + 2 = 3$
+\end{theorem}
 
 \end{document}
