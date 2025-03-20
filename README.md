@@ -1,6 +1,6 @@
 # cite-lean
 
-Create links to Lean 4 documentation.
+Create LaTeX links to Lean 4 documentation.
 
 ## Installation
 
@@ -51,6 +51,7 @@ By putting `% cite-lean(Theory.my-theorem)` where `Theory.my-theorem` refers to 
 % cite-lean(Theory.my-theorem)
 
 % ... becomes ...
+
 \citeLean{Theory/Basic.html\#Theory.my-theorem} % cite-lean(Theory.my-theorem)
 ```
 
